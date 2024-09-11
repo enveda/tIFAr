@@ -2,3 +2,4 @@
 .Rdata
 .httr-oauth
 .DS_Store
+.Rproj.user
