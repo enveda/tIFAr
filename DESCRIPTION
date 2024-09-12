@@ -1,6 +1,6 @@
 Package: tIFA
 Type: Package
-Title: tIFA: Missing Data Imputation Method for Metabolomic Data
+Title: tIFA: Missing Data Imputation Method for Metabolomics Data
 Version: 0.1.0
 Author: c(
     person("Kate", "Finucane", email = "kate.finucane@ucdconnect.ie", role = c("aut", "cre"),

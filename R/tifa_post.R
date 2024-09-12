@@ -34,6 +34,8 @@
 #'
 #' # process tIFA results (short burn for example)
 #' processed_res <- tifa_post(tifa_res, burn = 10)
+#'
+#' @noRd
 tifa_post <- function(tifa_res, burn) {
 
   # extract input data from results object

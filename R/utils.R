@@ -25,6 +25,8 @@
 #' example_data <- matrix(rnorm(20), nrow = 5)
 #' example_data[4, 2] <- 0.001  # add missingness to example data coded as 0.001
 #' FA_process(example_data, coding = 0.001)
+#'
+#' @noRd
 FA_process <- function(data, scaled = FALSE, coding = NA, pareto_scale = FALSE,
                        log_trans = FALSE) {
 
@@ -73,6 +75,8 @@ FA_process <- function(data, scaled = FALSE, coding = NA, pareto_scale = FALSE,
 #' @examples
 #' x <- c(1, 2, 3, 4, 4, 5)
 #' Mode(x)
+#'
+#' @noRd
 Mode <- function(x) {
 
   options <- unique(x)
