@@ -1,8 +1,7 @@
 Package: tIFA
-Type: Package
 Title: A Missing Data Imputation Method for Metabolomics Data Using a Truncated Bayesian Infinite Factor Model
 Version: 0.1.0
-Author@R: c(
+Authors@R: c(
   person(
     given = "Kate",
     family = "Finucane",
@@ -19,8 +18,7 @@ Author@R: c(
     family = "Brennan",
     role = "aut"
   )
-)
-Maintainer: Kate Finucane <kate.finucane@ucdconnect.ie>
+  )
 Description: A missing data imputation method using a truncated infinite factor analysis model designed for high-dimensional metabolomic data.
 License: GPL (>= 3)
 Encoding: UTF-8

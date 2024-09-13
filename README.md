@@ -5,7 +5,7 @@
 
 The tIFA R package presents a set of functions that perform missing data
 imputation using a truncated infinite factor analysis model designed for
-high-dimensional metabolomic data.
+high-dimensional metabolomics data.
 
 ## Installation
 
