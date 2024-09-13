@@ -25,7 +25,7 @@
 #'
 #' * imputation_info: A dataframe containing information on imputed values and associated uncertainty for each missing entry in the original dataset.
 #'
-#' * chain: Returned only if return_chain = TRUE. Provides all draws from the MCMC chain and further information.
+#' * chain: Returned only if return_chain = `TRUE`. Provides all draws from the MCMC chain and further information.
 #'
 #'     * store_data: MCMC draws of the imputed data entries.
 #'

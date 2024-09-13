@@ -1,29 +1,24 @@
 #' Extract information from input data in preparation for imputation.
 #'
 #' @description
-#' Processes a dataset for use in a tIFA model.
+#' Extracts information from a dataset for use in a tIFA model.
 #'
 #'
 #' @param data The data to be processed. If not a matrix, will be transformed in to a matrix.
-#' @param scaled TRUE/FALSE. Should the input data be scaled? Defaults to FALSE.
-#' @param coding The coding used to indicate a data entry is missing. Defaults to NA.
-#' @param pareto_scale TRUE/FALSE. Should the input data be Pareto scaled? Defaults to FALSE.
-#' @param log_trans TRUE/FALSE. Should the input data be log transformed? Defaults to FALSE.
+#' @param scaled `TRUE`/`FALSE.` Should the input data be scaled? Defaults to `FALSE.`
+#' @param coding The coding used to indicate a data entry is missing. Defaults to `NA.`
+#' @param pareto_scale `TRUE`/`FALSE.` Should the input data be Pareto scaled? Defaults to `FALSE.`
+#' @param log_trans `TRUE`/`FALSE.` Should the input data be log transformed? Defaults to `FALSE.`
 #'
 #' @return A list containing three entries.
 #'
-#' * "data" contains the processed data in matrix format with missing entries coded as NA.
+#' * data: Contains the processed data in matrix format with missing entries coded as `NA`.
 #'
-#' * "missingness_pattern" contains the missingness pattern of the data for use in the tIFA model.
+#' * missingness_pattern: Contains the missingness pattern of the data for use in the tIFA model.
 #'
-#' * "divisors" contains a vector of the divisors used to scale the input data, if applicable. If unscaled, the value will be NULL.
+#' * divisors: Contains a vector of the divisors used to scale the input data, if applicable. If unscaled, the value will be `NULL`.
 #'
 #' @importFrom stats sd
-#'
-#' @examples
-#' example_data <- matrix(rnorm(20), nrow = 5)
-#' example_data[4, 2] <- 0.001  # add missingness to example data coded as 0.001
-#' tifa_prep(example_data, coding = 0.001)
 #'
 #' @noRd
 tifa_prep <- function(data, scaled = FALSE, coding = NA, pareto_scale = FALSE,
@@ -67,10 +62,6 @@ tifa_prep <- function(data, scaled = FALSE, coding = NA, pareto_scale = FALSE,
 #'
 #' @return The mode of x. If x is multi-modal, the first mode (by index in x) is returned.
 #'
-#' @examples
-#' x <- c(1, 2, 3, 4, 4, 5)
-#' Mode(x)
-#'
 #' @noRd
 Mode <- function(x) {
 
@@ -82,8 +73,9 @@ Mode <- function(x) {
 
 #' Results formatting for tIFA results
 #'
-#' @param tifa_res The output object of the [tIFA_model()] function.
-#' @param burn The desired burn-in. Should be a multiple of five.
+#' @param tifa_res Draws from the MCMC chain of the tIFA model
+#' @param burn The number of MCMC iterations to be discarded in an initial burn.
+#' @param thin The level of thinning to take place in the MCMC chain. E.g., `thin = 5` will retain every fifth draw, post-burn.
 #'
 #' @return Returns a list containing two entries.
 #'
@@ -93,30 +85,8 @@ Mode <- function(x) {
 #'
 #' @importFrom stats quantile
 #'
-#' @examples
-#' # generate example data
-#' example_data <- matrix(abs(rnorm(100)), nrow = 5)
-#'
-#' # add missingness to example data coded as 0.001
-#' example_data[4, 2] <- 0.001
-#' example_data[2, 18] <- 0.001
-#'
-#' # apply data pre-processing function
-#' input_data <- tifa_prep(example_data, coding = 0.001)
-#'
-#' # perform zero imputation to use as initial imputed data value in tIFA
-#' zero_imp <- input_data$data
-#' zero_imp[is.na(zero_imp)] <- 0
-#'
-#' # run tIFA model (short chain for example)
-#' tifa_res <- tIFA_model(data = input_data$data, missingness = input_data$missingness, M = 1000,
-#'                        initial_dataset = zero_imp, k = 5)
-#'
-#' # process tIFA results (short burn for example)
-#' processed_res <- tifa_res_format(tifa_res, burn = 10)
-#'
 #' @noRd
-tifa_res_format <- function(tifa_res, burn) {
+tifa_res_format <- function(tifa_res, burn, thin) {
 
   # extract input data from results object
   original_data <- tifa_res$input_data
@@ -124,7 +94,7 @@ tifa_res_format <- function(tifa_res, burn) {
   n <- dim(original_data)[1]
   p <- dim(original_data)[2]
 
-  M <- length((tifa_res$store_data[-(1:(burn/5))]))
+  M <- length((tifa_res$store_data[-(1:(burn/thin))]))
 
   # extract missingness information from results object
   missingness <- tifa_res$input_missingness
@@ -133,17 +103,17 @@ tifa_res_format <- function(tifa_res, burn) {
   miss_ind <- which(missingness == 0, arr.ind = TRUE)
 
   # Z designation
-  store_Z <- sapply(tifa_res$store_Z[-(1:(burn/5))], FUN = matrix)
+  store_Z <- sapply(tifa_res$store_Z[-(1:(burn/thin))], FUN = matrix)
 
   # imputed data
-  data_mat <- array(NA, dim = c(length((tifa_res$store_data[-(1:(burn/5))])[[1]]),
+  data_mat <- array(NA, dim = c(length((tifa_res$store_data[-(1:(burn/thin))])[[1]]),
                                 M))
 
   print(dim(data_mat))
 
   for (i in 1:M) {
 
-    data_mat[ , i] <- (tifa_res$store_data[-(1:(burn/5))])[[i]]
+    data_mat[ , i] <- (tifa_res$store_data[-(1:(burn/thin))])[[i]]
 
   }
 

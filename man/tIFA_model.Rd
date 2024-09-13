@@ -4,47 +4,77 @@
 \alias{tIFA_model}
 \title{Truncated Infinite Factor Analysis Imputation Model}
 \usage{
-tIFA_model(data, missingness, M, initial_dataset, k = 5)
+tIFA_model(
+  input_data,
+  coding = NA,
+  M = 10000,
+  k = 5,
+  verbose = TRUE,
+  burn = 5000,
+  thin = 5,
+  mu_varphi = 0.1,
+  kappa_1 = 3L,
+  kappa_2 = 2L,
+  a_sigma = 1L,
+  b_sigma = 0.3,
+  a_1 = 2.1,
+  a_2 = 3.1,
+  return_chain = FALSE
+)
 }
 \arguments{
-\item{data}{The data on which to apply imptutation. Should be processed using [FA_process()] function.}
+\item{input_data}{The dataset with missing value requiring imputation in matrix format.}
 
-\item{missingness}{The missingness pattern of the input data. This is returned from the [FA_process()] function applied to the input data.}
+\item{coding}{The coding used to indicate a data entry is missing. Defaults to \code{NA}.}
 
-\item{M}{The number of MCMC iterations desired. A multiple of 5 is expected.}
-
-\item{initial_dataset}{Starting imputation for the input data. E.g., the imputed dataset resulting from mean imputation.}
+\item{M}{The number of MCMC iterations desired. Defaults to 10000.}
 
 \item{k}{The number of "effective-factors" desired for use in the tIFA model. Defaults to 5.}
+
+\item{verbose}{Is a readout desired? Defaults to \code{TRUE}.}
+
+\item{burn}{The number of MCMC iterations to be discarded in an initial burn. Defaults to 5000.}
+
+\item{thin}{The level of thinning to take place in the MCMC chain. Defaults to 5, meaning only every fifth draw will be kept.}
+
+\item{mu_varphi}{Parameter \eqn{\varphi} in the tIFA model. Defaults to 0.1.}
+
+\item{kappa_1}{Parameter \eqn{\kappa_1} in the tIFA model. Defaults to 3.}
+
+\item{kappa_2}{Parameter \eqn{\kappa_2} in the tIFA model. Defaults to 2.}
+
+\item{a_sigma}{Parameter \eqn{a_{\sigma}} in the tIFA model. Defaults to 1.}
+
+\item{b_sigma}{Parameter \eqn{b_{\sigma}} in the tIFA model. Defaults to 0.3.}
+
+\item{a_1}{Parameter \eqn{a_1} in the tIFA model. Defaults to 2.1.}
+
+\item{a_2}{Parameter \eqn{a_2} in the tIFA model. Defaults to 3.1.}
+
+\item{return_chain}{Should resulting draws from the MCMC chain be returned? Defaults to \code{FALSE}.}
 }
 \value{
-Returns a list containing 11 entries.
-
-* store_data: MCMC draws of the imputed data entries.
-
-* store_alpha: MCMC draws of the alpha parameter.
-
-* store_sigma_inv: MCMC draws of the sigma^-2 entries.
-
-* store_lambda: MCMC draws of the loadings matrix.
-
-* store_eta: MCMC draws of the latent factor scores.
-
-* store_mu: MCMC draws of the mean vector.
-
-* store_k_t: MCMC draws of the effective factor number (unchanging).
-
-* store_phi: MCMC draws of the local shrinkage parameters.
-
-* store_delta: MCMC draws of the multiplicative gamma process parameters.
-
-* store_b_sigma: MCMC draws of the b_sigma parameter (unchanging).
-
-* store_Z: MCMC draws of the missingness designation indicator for each imputed entry.
-
-* input_data: The dataset input into the tIFA model.
-
-* input_missingness: The missingness pattern input into the tIFA model.
+Returns a list containing entries:
+\itemize{
+\item imputed_dataset: The imputed dataset in matrix format.
+\item imputation_info: A dataframe containing information on imputed values and associated uncertainty for each missing entry in the original dataset.
+\item chain: Returned only if return_chain = \code{TRUE}. Provides all draws from the MCMC chain and further information.
+\itemize{
+\item store_data: MCMC draws of the imputed data entries.
+\item store_alpha: MCMC draws of the \eqn{\alpha} parameter.
+\item store_sigma_inv: MCMC draws of the \eqn{\sigma^{-2}} entries.
+\item store_lambda: MCMC draws of the loadings matrix.
+\item store_eta: MCMC draws of the latent factor scores.
+\item store_mu: MCMC draws of the mean vector.
+\item store_k_t: MCMC draws of the effective factor number (unchanging).
+\item store_phi: MCMC draws of the local shrinkage parameters.
+\item store_delta: MCMC draws of the multiplicative gamma process parameters.
+\item store_b_sigma: MCMC draws of the \eqn{b_{\sigma}} parameter (unchanging).
+\item store_Z: MCMC draws of the missingness designation indicator for each imputed entry.
+\item input_data: The dataset input into the tIFA model.
+\item input_missingness: The missingness pattern input into the tIFA model.
+}
+}
 }
 \description{
 Applies the tIFA imputation method to the input dataset.
@@ -57,15 +87,9 @@ example_data <- matrix(abs(rnorm(100)), nrow = 5)
 example_data[4, 2] <- 0.001
 example_data[2, 18] <- 0.001
 
-# apply data pre-processing function
-input_data <- FA_process(example_data, coding = 0.001)
-
-# perform zero imputation to use as initial imputed data value in tIFA
-zero_imp <- input_data$data
-zero_imp[is.na(zero_imp)] <- 0
-
 # run tIFA model
-tIFA_model(data = input_data$data, missingness = input_data$missingness, M = 50,
-           initial_dataset = zero_imp, k = 5)
+# short chain for example
+tIFA_model(input_data = example_data, coding = 0.001, M = 100, k = 3,
+           burn = 50, thin = 5)
 
 }
