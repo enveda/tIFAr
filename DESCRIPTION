@@ -10,11 +10,14 @@ Maintainer: Kate Finucane <kate.finucane@ucdconnect.ie>
 Description: A missing data imputation using a truncated infinite factor analysis model designed for high-dimensional metabolomic data.
 License: GPL (>= 3)
 Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
 LazyData: true
 RoxygenNote: 7.3.1
 Imports: 
     Rcpp,
     Rfast,
+    softImpute,
+    stats,
     TruncatedNormal,
     truncdist,
     truncnorm
