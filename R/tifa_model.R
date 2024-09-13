@@ -158,8 +158,6 @@ tIFA_model <- function(input_data, coding = NA, M = 10000, k = 5,
 
   }  # n x k
 
-  print("here")
-
   eps <- matrix(NA, nrow = n, ncol = p)
 
   for (i in 1:n) {
@@ -283,6 +281,7 @@ tIFA_model <- function(input_data, coding = NA, M = 10000, k = 5,
 
     }
 
+    # in case of computation difficulty on first iter
     eta[which(eta == "NaN" | eta == Inf)] <- 0
 
     # eta is a n x k matrix
