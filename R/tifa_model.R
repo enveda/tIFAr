@@ -3,40 +3,55 @@
 #' @description
 #' Applies the tIFA imputation method to the input dataset.
 #'
-#'
-#' @param data The data on which to apply imptutation. Should be processed using [FA_process()] function.
-#' @param missingness The missingness pattern of the input data. This is returned from the [FA_process()] function applied to the input data.
-#' @param M The number of MCMC iterations desired. A multiple of 5 is expected.
-#' @param initial_dataset Starting imputation for the input data. E.g., the imputed dataset resulting from mean imputation.
+#' @param input_data The dataset with missing value requiring imputation in matrix format.
+#' @param coding The coding used to indicate a data entry is missing. Defaults to `NA`.
+#' @param M The number of MCMC iterations desired. Defaults to 10000.
 #' @param k The number of "effective-factors" desired for use in the tIFA model. Defaults to 5.
+#' @param verbose Is a readout desired? Defaults to `TRUE`.
+#' @param burn The number of MCMC iterations to be discarded in an initial burn. Defaults to 5000.
+#' @param thin The level of thinning to take place in the MCMC chain. Defaults to 5, meaning only every fifth draw will be kept.
+#' @param mu_varphi Parameter \eqn{\varphi} in the tIFA model. Defaults to 0.1.
+#' @param kappa_1 Parameter \eqn{\kappa_1} in the tIFA model. Defaults to 3.
+#' @param kappa_2 Parameter \eqn{\kappa_2} in the tIFA model. Defaults to 2.
+#' @param a_sigma Parameter \eqn{a_{\sigma}} in the tIFA model. Defaults to 1.
+#' @param b_sigma Parameter \eqn{b_{\sigma}} in the tIFA model. Defaults to 0.3.
+#' @param a_1 Parameter \eqn{a_1} in the tIFA model. Defaults to 2.1.
+#' @param a_2 Parameter \eqn{a_2} in the tIFA model. Defaults to 3.1.
+#' @param return_chain Should resulting draws from the MCMC chain be returned? Defaults to `FALSE`.
 #'
-#' @return Returns a list containing 11 entries.
+#' @return Returns a list containing entries:
 #'
-#' * store_data: MCMC draws of the imputed data entries.
+#' * imputed_dataset: The imputed dataset in matrix format.
 #'
-#' * store_alpha: MCMC draws of the alpha parameter.
+#' * imputation_info: A dataframe containing information on imputed values and associated uncertainty for each missing entry in the original dataset.
 #'
-#' * store_sigma_inv: MCMC draws of the sigma^-2 entries.
+#' * chain: Returned only if return_chain = TRUE. Provides all draws from the MCMC chain and further information.
 #'
-#' * store_lambda: MCMC draws of the loadings matrix.
+#'     * store_data: MCMC draws of the imputed data entries.
 #'
-#' * store_eta: MCMC draws of the latent factor scores.
+#'     * store_alpha: MCMC draws of the \eqn{\alpha} parameter.
 #'
-#' * store_mu: MCMC draws of the mean vector.
+#'     * store_sigma_inv: MCMC draws of the \eqn{\sigma^{-2}} entries.
 #'
-#' * store_k_t: MCMC draws of the effective factor number (unchanging).
+#'     * store_lambda: MCMC draws of the loadings matrix.
 #'
-#' * store_phi: MCMC draws of the local shrinkage parameters.
+#'     * store_eta: MCMC draws of the latent factor scores.
 #'
-#' * store_delta: MCMC draws of the multiplicative gamma process parameters.
+#'     * store_mu: MCMC draws of the mean vector.
 #'
-#' * store_b_sigma: MCMC draws of the b_sigma parameter (unchanging).
+#'     * store_k_t: MCMC draws of the effective factor number (unchanging).
 #'
-#' * store_Z: MCMC draws of the missingness designation indicator for each imputed entry.
+#'     * store_phi: MCMC draws of the local shrinkage parameters.
 #'
-#' * input_data: The dataset input into the tIFA model.
+#'     * store_delta: MCMC draws of the multiplicative gamma process parameters.
 #'
-#' * input_missingness: The missingness pattern input into the tIFA model.
+#'     * store_b_sigma: MCMC draws of the \eqn{b_{\sigma}} parameter (unchanging).
+#'
+#'     * store_Z: MCMC draws of the missingness designation indicator for each imputed entry.
+#'
+#'     * input_data: The dataset input into the tIFA model.
+#'
+#'     * input_missingness: The missingness pattern input into the tIFA model.
 #'
 #' @importFrom Rfast transpose mat.mult colsums
 #' @importFrom TruncatedNormal rtmvnorm
@@ -44,6 +59,7 @@
 #' @importFrom stats rgamma rbeta rbinom runif prcomp cov
 #' @importFrom truncnorm ptruncnorm rtruncnorm
 #' @importFrom Rcpp cppFunction
+#' @importFrom softImpute softImpute
 #'
 #' @export
 #'
@@ -55,20 +71,24 @@
 #' example_data[4, 2] <- 0.001
 #' example_data[2, 18] <- 0.001
 #'
-#' # apply data pre-processing function
-#' input_data <- FA_process(example_data, coding = 0.001)
-#'
-#' # perform zero imputation to use as initial imputed data value in tIFA
-#' zero_imp <- input_data$data
-#' zero_imp[is.na(zero_imp)] <- 0
-#'
 #' # run tIFA model
-#' tIFA_model(data = input_data$data, missingness = input_data$missingness, M = 50,
-#'            initial_dataset = zero_imp, k = 5)
+#' # short chain for example
+#' tIFA_model(input_data = example_data, coding = 0.001, M = 100, k = 3,
+#'            burn = 50, thin = 5)
 #'
-tIFA_model <- function(data, missingness, M, initial_dataset, k = 5) {
+tIFA_model <- function(input_data, coding = NA, M = 10000, k = 5,
+                       verbose = TRUE, burn = 5000, thin = 5,
+                       mu_varphi = 0.1, kappa_1 = 3L, kappa_2 = 2L,
+                       a_sigma = 1L, b_sigma = 0.3, a_1 = 2.1, a_2 = 3.1,
+                       return_chain = FALSE) {
 
   Rcpp::cppFunction("arma::mat armaInv(const arma::mat & x) { return arma::inv(x); }", depends = "RcppArmadillo")
+
+  # code data as expected
+  # extract missingness information
+  prepped_data <- tifa_prep(input_data, coding = coding)
+
+  missingness <- prepped_data$missingness_pattern
 
   # ~~~~~~~~~~~~~~~~~~~~
   # ~~~~~~~~~~~~~~~~~~~~
@@ -77,8 +97,8 @@ tIFA_model <- function(data, missingness, M, initial_dataset, k = 5) {
   # ~~~~~~~~~~~~~~~~~~~~
 
   # data dimensions
-  n <- nrow(data)
-  p <- ncol(data)
+  n <- nrow(prepped_data$data)
+  p <- ncol(prepped_data$data)
 
   # seeding function for rcpp functions
   get_seed <- function() {
@@ -88,7 +108,7 @@ tIFA_model <- function(data, missingness, M, initial_dataset, k = 5) {
   }
 
   # truncation point
-  trunc.point <- min(data, na.rm = TRUE)
+  trunc.point <- min(prepped_data$data, na.rm = TRUE)
 
   # indices of missing data
   # col 1 contains row indices in data
@@ -103,16 +123,20 @@ tIFA_model <- function(data, missingness, M, initial_dataset, k = 5) {
   # ~~~~~~~~~~~~~~~~~~~~
   # ~~~~~~~~~~~~~~~~~~~~
 
+  # initialise imputation with svd imputation
+  start_svd <- softImpute(prepped_data$data, rank.max = k, type = "svd")
+
+  start_imp <- start_svd$u %*% diag(start_svd$d) %*% t(start_svd$v)
+
+  initial_dataset <- prepped_data$data
+  initial_dataset[is.na(initial_dataset)] <- start_imp[is.na(initial_dataset)]
+
+  # data for tIFA
   data_working <- initial_dataset
-  mu <- matrix(apply(data, 2, mean, na.rm = TRUE))
+
+  # initialise remaining parameters
+  mu <- matrix(apply(prepped_data$data, 2, mean, na.rm = TRUE))
   mu_tilde <- mu
-  mu_varphi <- 0.1
-  kappa_1 <- 3L
-  kappa_2 <- 2L
-  a_sigma <- 1L
-  b_sigma <- 0.3
-  a_1 <- 2.1
-  a_2 <- 3.1
   alpha <- runif(1, 0, 1)
 
   # use pca to initialise factors and loadings
@@ -133,6 +157,8 @@ tIFA_model <- function(data, missingness, M, initial_dataset, k = 5) {
                                            lb = rep(0, k))
 
   }  # n x k
+
+  print("here")
 
   eps <- matrix(NA, nrow = n, ncol = p)
 
@@ -158,6 +184,8 @@ tIFA_model <- function(data, missingness, M, initial_dataset, k = 5) {
                                     a = 1)
 
   tau <- matrix(cumprod(delta))  # k x 1
+
+  rm(prepped_data)
 
   # ~~~~~~~~~~~~~~~~~~~~
   # ~~~~~~~~~~~~~~~~~~~~
@@ -198,7 +226,7 @@ tIFA_model <- function(data, missingness, M, initial_dataset, k = 5) {
   for (m in seq_len(M)) {
 
     # create a readout
-    statement <- paste(Sys.time(), "iteration:", m, ", k_t:", k)
+    statement <- paste("tIFA process running. Now on iteration ", m, " of ", M)
     print(statement)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -420,56 +448,67 @@ tIFA_model <- function(data, missingness, M, initial_dataset, k = 5) {
     # ~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~
 
-    if (m %% 5 == 0) {
+    if (m %% thin == 0) {
 
       # imputed dataset
-      store_data[[m / 5]] <- data_working[miss_vec]
+      store_data[[m / thin]] <- data_working[miss_vec]
 
       # alpha - prob of MAR
-      store_alpha[[m / 5]] <- alpha
+      store_alpha[[m / thin]] <- alpha
 
       # sigma
-      store_sigma_inv[[m / 5]] <- sigma_inv
+      store_sigma_inv[[m / thin]] <- sigma_inv
 
       # lambda - factor loadings
-      store_lambda[[m / 5]] <- lambda
+      store_lambda[[m / thin]] <- lambda
 
       # eta
-      store_eta[[m / 5]] <- eta
+      store_eta[[m / thin]] <- eta
 
       # mu - mean
-      store_mu[[m / 5]] <- mu
+      store_mu[[m / thin]] <- mu
 
       # effective factors
-      store_k_t[[m / 5]] <- k
+      store_k_t[[m / thin]] <- k
 
       # phi
-      store_phi[[m / 5]] <- phi
+      store_phi[[m / thin]] <- phi
 
       # delta
-      store_delta[[m / 5]] <- delta
+      store_delta[[m / thin]] <- delta
 
       # Z
-      store_Z[[m / 5]] <- Z
+      store_Z[[m / thin]] <- Z
 
     }
 
   }
 
-  output <- list("store_data" = store_data,
-                 "store_alpha" = store_alpha,
-                 "store_sigma_inv" = store_sigma_inv,
-                 "store_lambda" = store_lambda,
-                 "store_eta" = store_eta,
-                 "store_mu" = store_mu,
-                 "store_k_t" = store_k_t,
-                 "store_phi" = store_phi,
-                 "store_delta" = store_delta,
-                 "store_b_sigma" = b_sigma,
-                 "store_Z" = store_Z,
-                 "input_data" = data,
-                 "input_missingness" = missingness
+  tifa_res <- list("store_data" = store_data,
+                   "store_alpha" = store_alpha,
+                   "store_sigma_inv" = store_sigma_inv,
+                   "store_lambda" = store_lambda,
+                   "store_eta" = store_eta,
+                   "store_mu" = store_mu,
+                   "store_k_t" = store_k_t,
+                   "store_phi" = store_phi,
+                   "store_delta" = store_delta,
+                   "store_b_sigma" = b_sigma,
+                   "store_Z" = store_Z,
+                   "input_data" = input_data,
+                   "input_missingness" = missingness
   )
+
+  formatted_res <- tifa_res_format(tifa_res, burn = burn, thin = thin)
+
+  output <- list("imputed_dataset" = formatted_res$imputed_dataset,
+                 "imputation_info" = formatted_res$imputation_info)
+
+  if (return_chain) {
+
+    output$chain <- tifa_res
+
+  }
 
   return(output)
 }
