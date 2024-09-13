@@ -109,8 +109,6 @@ tifa_res_format <- function(tifa_res, burn, thin) {
   data_mat <- array(NA, dim = c(length((tifa_res$store_data[-(1:(burn/thin))])[[1]]),
                                 M))
 
-  print(dim(data_mat))
-
   for (i in 1:M) {
 
     data_mat[ , i] <- (tifa_res$store_data[-(1:(burn/thin))])[[i]]
