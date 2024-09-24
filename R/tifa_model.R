@@ -6,7 +6,7 @@
 #' @param input_data The dataset with missing value requiring imputation in matrix format.
 #' @param coding The coding used to indicate a data entry is missing. Defaults to `NA`.
 #' @param n.iters The number of MCMC iterations desired. Defaults to 10000.
-#' @param k The number of "effective-factors" desired for use in the tIFA model. Defaults to 5.
+#' @param k.star Parameter \eqn{k^{*}} in the tIFA model. Defaults to 5.
 #' @param verbose Is a readout desired? Defaults to `TRUE`.
 #' @param burn The number of MCMC iterations to be discarded in an initial burn. Defaults to 5000.
 #' @param thin The level of thinning to take place in the MCMC chain. Defaults to 5, meaning only every fifth draw will be kept.
@@ -73,10 +73,10 @@
 #'
 #' # run tIFA model
 #' # short chain for example
-#' tIFA_model(input_data = example_data, coding = 0.001, n.iters = 100, k = 3,
+#' tIFA_model(input_data = example_data, coding = 0.001, n.iters = 100, k.star = 3,
 #'            burn = 50, thin = 5)
 #'
-tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
+tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k.star = 5,
                        verbose = TRUE, burn = 5000, thin = 5,
                        mu_varphi = 0.1, kappa_1 = 3L, kappa_2 = 2L,
                        a_sigma = 1L, b_sigma = 0.3, a_1 = 2.1, a_2 = 3.1,
@@ -124,7 +124,7 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
   # ~~~~~~~~~~~~~~~~~~~~
 
   # initialise imputation with svd imputation
-  start_svd <- softImpute(prepped_data$data, rank.max = k, type = "svd")
+  start_svd <- softImpute(prepped_data$data, rank.max = k.star, type = "svd")
 
   start_imp <- start_svd$u %*% diag(start_svd$d) %*% t(start_svd$v)
 
@@ -142,21 +142,21 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
   # use pca to initialise factors and loadings
   pca_res <- prcomp(data_working, scale. = FALSE, center = FALSE)
 
-  lambda <- pca_res$rotation[ , 1:k]  # p x k
+  lambda <- pca_res$rotation[ , 1:k.star]  # p x k.star
   rownames(lambda) <- NULL
   colnames(lambda) <- NULL
   lambda[which(lambda < 0)] <- abs(lambda[which(lambda < 0)])
 
-  eta <- matrix(NA, nrow = n, ncol = k)
+  eta <- matrix(NA, nrow = n, ncol = k.star)
 
   for (i in 1:n) {
 
     eta[i , ] <- TruncatedNormal::rtmvnorm(n = 1,
-                                           mu = rep(0, k),
-                                           sigma = diag(k),
-                                           lb = rep(0, k))
+                                           mu = rep(0, k.star),
+                                           sigma = diag(k.star),
+                                           lb = rep(0, k.star))
 
-  }  # n x k
+  }  # n x k.star
 
   eps <- matrix(NA, nrow = n, ncol = p)
 
@@ -170,18 +170,18 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
 
   Sigma_inv <- diag(sigma_inv[ , 1])
 
-  phi <- matrix(rgamma(n = p * k, shape = kappa_1, rate = kappa_2),  # p x k
+  phi <- matrix(rgamma(n = p * k.star, shape = kappa_1, rate = kappa_2),  # p x k.star
                 nrow = p)
 
-  delta <- matrix(rep(0, k), nrow = k)  # k x 1
+  delta <- matrix(rep(0, k.star), nrow = k.star)  # k.star x 1
   delta[1, 1] <- rgamma(n = 1, shape = a_1, rate = 1)
   delta[-1, 1] <- truncdist::rtrunc(spec = "gamma",
-                                    n = k - 1,
+                                    n = k.star - 1,
                                     shape = a_2,
                                     rate = 1,
                                     a = 1)
 
-  tau <- matrix(cumprod(delta))  # k x 1
+  tau <- matrix(cumprod(delta))  # k.star x 1
 
   rm(prepped_data)
 
@@ -233,26 +233,26 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    eta_t_eta <- mat.mult(Rfast::transpose(eta) , eta)  # k x k
+    eta_t_eta <- mat.mult(Rfast::transpose(eta) , eta)  # k.star x k.star
 
     for (j in 1:p) {
 
-      if (k == 1) {
+      if (k.star == 1) {
 
-        lambda_var <- armaInv(sigma_inv[j] * eta_t_eta + diag(c(phi[j, ] * tau), nrow = 1))  # k x k
+        lambda_var <- armaInv(sigma_inv[j] * eta_t_eta + diag(c(phi[j, ] * tau), nrow = 1))  # k.star x k.star
 
       } else {
 
-        lambda_var <- armaInv(sigma_inv[j] * eta_t_eta + diag(c(phi[j, ] * tau)))  # k x k
+        lambda_var <- armaInv(sigma_inv[j] * eta_t_eta + diag(c(phi[j, ] * tau)))  # k.star x k.star
 
       }
 
       lambda_mean <- mat.mult(lambda_var, mat.mult(
-        Rfast::transpose(eta), as.matrix(data_working[ , j] - mu[j])) * sigma_inv[j])  # k x 1
+        Rfast::transpose(eta), as.matrix(data_working[ , j] - mu[j])) * sigma_inv[j])  # k.star x 1
 
 
       lambda[j, ] <- TruncatedNormal::rtmvnorm(n = 1, mu = as.vector(lambda_mean),
-                                               sigma = lambda_var, lb = rep(0, k))
+                                               sigma = lambda_var, lb = rep(0, k.star))
 
     }
 
@@ -260,7 +260,7 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
     # as approach zero from above
     lambda[which(lambda == "NaN" | lambda == Inf)] <- 1e-8
 
-    # lambda is a p x k matrix
+    # lambda is a p x k.star matrix
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -270,21 +270,21 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
 
     lambda_t_Sigma <- mat.mult(Rfast::transpose(lambda), Sigma_inv)
 
-    eta_var <- armaInv(diag(k) + mat.mult(lambda_t_Sigma, lambda))  # k x k
+    eta_var <- armaInv(diag(k.star) + mat.mult(lambda_t_Sigma, lambda))  # k.star x k.star
 
     for (i in 1:n) {
 
-      eta_mean <- mat.mult(eta_var, mat.mult(lambda_t_Sigma, as.matrix(data_working[i, ] - mu)))  # k x 1
+      eta_mean <- mat.mult(eta_var, mat.mult(lambda_t_Sigma, as.matrix(data_working[i, ] - mu)))  # k.star x 1
 
       eta[i , ] <-  TruncatedNormal::rtmvnorm(n = 1, mu = as.vector(eta_mean),
-                                              sigma = eta_var, lb = rep(0, k))
+                                              sigma = eta_var, lb = rep(0, k.star))
 
     }
 
     # in case of computation difficulty on first iter
     eta[which(eta == "NaN" | eta == Inf)] <- 0
 
-    # eta is a n x k matrix
+    # eta is a n x k.star matrix
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -335,13 +335,13 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    for (h in 1:k) {
+    for (h in 1:k.star) {
 
       phi[ , h] <- rgamma(p, shape = rep(0.5 + kappa_1, p), rate = kappa_2 + 0.5 * tau[h] * lambda[ , h]^2)
 
     }
 
-    # phi is a p x k matrix
+    # phi is a p x k.star matrix
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -350,17 +350,17 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     delta[1, 1] <- rgamma(1,
-                          shape = a_1 + 0.5 * k * p,
+                          shape = a_1 + 0.5 * k.star * p,
                           rate = 1 + 0.5 * sum((tau / delta[1, 1]) * colsums(lambda^2 * phi)))
 
     tau <- matrix(cumprod(delta))
 
-    if (k > 1) {
+    if (k.star > 1) {
 
-      for (h in 2:k) {
+      for (h in 2:k.star) {
 
-        delta_shape <- a_2 + 0.5 * p * (k - h + 1)
-        delta_rate <- 1 + 0.5 * sum(((tau / delta[h, 1]) * colsums(lambda^2 * phi))[h:k])
+        delta_shape <- a_2 + 0.5 * p * (k.star - h + 1)
+        delta_rate <- 1 + 0.5 * sum(((tau / delta[h, 1]) * colsums(lambda^2 * phi))[h:k.star])
 
         delta[h, 1] <- truncdist::rtrunc(spec = "gamma",
                                          n = 1,
@@ -375,8 +375,8 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
     }
 
 
-    # delta is a k x 1 matrix
-    # tau is a k x 1 matrix
+    # delta is a k.star x 1 matrix
+    # tau is a k.star x 1 matrix
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -468,7 +468,7 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
       store_mu[[m / thin]] <- mu
 
       # effective factors
-      store_k_t[[m / thin]] <- k
+      store_k_t[[m / thin]] <- k.star
 
       # phi
       store_phi[[m / thin]] <- phi
