@@ -5,7 +5,7 @@
 #'
 #' @param input_data The dataset with missing value requiring imputation in matrix format.
 #' @param coding The coding used to indicate a data entry is missing. Defaults to `NA`.
-#' @param M The number of MCMC iterations desired. Defaults to 10000.
+#' @param n.iters The number of MCMC iterations desired. Defaults to 10000.
 #' @param k The number of "effective-factors" desired for use in the tIFA model. Defaults to 5.
 #' @param verbose Is a readout desired? Defaults to `TRUE`.
 #' @param burn The number of MCMC iterations to be discarded in an initial burn. Defaults to 5000.
@@ -73,10 +73,10 @@
 #'
 #' # run tIFA model
 #' # short chain for example
-#' tIFA_model(input_data = example_data, coding = 0.001, M = 100, k = 3,
+#' tIFA_model(input_data = example_data, coding = 0.001, n.iters = 100, k = 3,
 #'            burn = 50, thin = 5)
 #'
-tIFA_model <- function(input_data, coding = NA, M = 10000, k = 5,
+tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k = 5,
                        verbose = TRUE, burn = 5000, thin = 5,
                        mu_varphi = 0.1, kappa_1 = 3L, kappa_2 = 2L,
                        a_sigma = 1L, b_sigma = 0.3, a_1 = 2.1, a_2 = 3.1,
@@ -221,10 +221,10 @@ tIFA_model <- function(input_data, coding = NA, M = 10000, k = 5,
   # Z
   store_Z <- list()
 
-  for (m in seq_len(M)) {
+  for (m in seq_len(n.iters)) {
 
     # create a readout
-    statement <- paste("tIFA process running. Now on iteration ", m, " of ", M)
+    statement <- paste("tIFA process running. Now on iteration ", m, " of ", n.iters)
     print(statement)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

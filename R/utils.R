@@ -94,7 +94,7 @@ tifa_res_format <- function(tifa_res, burn, thin) {
   n <- dim(original_data)[1]
   p <- dim(original_data)[2]
 
-  M <- length((tifa_res$store_data[-(1:(burn/thin))]))
+  n.iters <- length((tifa_res$store_data[-(1:(burn/thin))]))
 
   # extract missingness information from results object
   missingness <- tifa_res$input_missingness
@@ -107,9 +107,9 @@ tifa_res_format <- function(tifa_res, burn, thin) {
 
   # imputed data
   data_mat <- array(NA, dim = c(length((tifa_res$store_data[-(1:(burn/thin))])[[1]]),
-                                M))
+                                n.iters))
 
-  for (i in 1:M) {
+  for (i in 1:n.iters) {
 
     data_mat[ , i] <- (tifa_res$store_data[-(1:(burn/thin))])[[i]]
 
