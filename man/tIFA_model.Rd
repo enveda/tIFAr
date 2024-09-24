@@ -7,8 +7,8 @@
 tIFA_model(
   input_data,
   coding = NA,
-  M = 10000,
-  k = 5,
+  n.iters = 10000,
+  k.star = 5,
   verbose = TRUE,
   burn = 5000,
   thin = 5,
@@ -27,9 +27,9 @@ tIFA_model(
 
 \item{coding}{The coding used to indicate a data entry is missing. Defaults to \code{NA}.}
 
-\item{M}{The number of MCMC iterations desired. Defaults to 10000.}
+\item{n.iters}{The number of MCMC iterations desired. Defaults to 10000.}
 
-\item{k}{The number of "effective-factors" desired for use in the tIFA model. Defaults to 5.}
+\item{k.star}{Parameter \eqn{k^{*}} in the tIFA model. Defaults to 5.}
 
 \item{verbose}{Is a readout desired? Defaults to \code{TRUE}.}
 
@@ -89,7 +89,13 @@ example_data[2, 18] <- 0.001
 
 # run tIFA model
 # short chain for example
-tIFA_model(input_data = example_data, coding = 0.001, M = 100, k = 3,
-           burn = 50, thin = 5)
+res <- tIFA_model(input_data = example_data, coding = 0.001, n.iters = 100, k.star = 3,
+                  burn = 50, thin = 5)
+
+# checkout imputed dataset
+res$imputed_dataset
+
+# checkout further information on imputed entries
+res$imputation_info
 
 }
