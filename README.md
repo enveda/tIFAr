@@ -71,6 +71,19 @@ res$imputed_dataset
 res$imputation_info
 ```
 
+The input dataset, with missing values imputed according to the tIFA
+imputation method is contained in `res$imputed_dataset` in matrix
+format. Details on the imputation can be accessed from
+`res$imputation_info`. This is a dataframe with number of rows equal to
+the number of missing values in the dataset, and seven columns. The
+`entry_row` and `entry_col` columns contain the row and column index of
+each missing value in the input dataset. The `imputed_val` column
+contains the imputed value, and `cred_int_upper` and `cred_int_lower`
+contain the upper and lower limits of hte 95% credible interval for the
+imputed point. Finally, the `miss_mech` column gives the final inferred
+missingness type of each point, with `miss_mech_unc` providing the
+corresponding uncertainty.
+
 If one wishes to change the hyperparameters of the tIFA model from their
 defaults, this can be done as follows. All parameters are as given in
 the tIFA paper.
