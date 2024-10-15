@@ -93,3 +93,10 @@ res <- tIFA_model(input_data = example_data, coding = 0.001, n.iters = 100, k.st
                   burn = 50, thin = 5, mu_varphi = 0.1, kappa_1 = 3L, kappa_2 = 2L,
                   a_sigma = 1L, b_sigma = 0.3, a_1 = 2.1, a_2 = 3.1)
 ```
+
+## References
+
+Finucane, K., Brennan, L., and Gormley, I. C. (2024). “Missing data
+imputation using a truncated infinite factor model with application to
+metabolomics data.” arXiv preprint:
+<https://doi.org/10.48550/arXiv.2410.10633>
