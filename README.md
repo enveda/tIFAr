@@ -52,7 +52,9 @@ The remaining parameters refer to the MCMC procedure; here
 `n.iters = 100` runs the MCMC chain for 100 iterations, with `burn = 50`
 controlling the number of draws discarded in a burn and `thin = 5`
 stating that every fifth post-burn draw from the MCMC chain should be
-retained.
+retained. Please note that `burn` should have a value less than
+`n.iters`, and `thin` should divide into both `burn`, and `n.iters` -
+`burn` with no remainder.
 
 ``` r
 # run tIFA model

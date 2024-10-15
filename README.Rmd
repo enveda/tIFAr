@@ -50,7 +50,7 @@ example_data[2, 18] <- 0.001
 
 This example data can then be passed into the `tIFA_model()` function which contains all package functionality. Here, `input_data` is the dataset with missing values, in matrix format. The `coding` argument refers to how the missing values are coded. If your missing values all have a value of `NA`, for example, you should input `coding = NA`. Here, for the example, missing entries are coded with the value `0.001`. Here, the value `k.star = 3` refers to the practical non-infinite number of latent factors used by the tIFA model; usually this defaults to `k.star = 5` but for this small example dataset we will use a smaller number. 
 
-The remaining parameters refer to the MCMC procedure; here `n.iters = 100` runs the MCMC chain for 100 iterations, with `burn = 50` controlling the number of draws discarded in a burn and `thin = 5` stating that every fifth post-burn draw from the MCMC chain should be retained. Please note that `burn` should have a value less than `n.iters`, and `thin` should divide into `n.iters` - `burn` with no remainder.
+The remaining parameters refer to the MCMC procedure; here `n.iters = 100` runs the MCMC chain for 100 iterations, with `burn = 50` controlling the number of draws discarded in a burn and `thin = 5` stating that every fifth post-burn draw from the MCMC chain should be retained. Please note that `burn` should have a value less than `n.iters`, and `thin` should divide into both `burn`, and `n.iters` - `burn` with no remainder.
 
 ```{r, results = FALSE}
 # run tIFA model
