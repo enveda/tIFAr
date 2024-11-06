@@ -83,10 +83,10 @@
 #' res$imputation_info
 #'
 tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k.star = 5,
-                       verbose = TRUE, burn = 5000, thin = 5,
+                       verbose = 1, burn = 5000, thin = 5,
                        mu_varphi = 0.1, kappa_1 = 3L, kappa_2 = 2L,
                        a_sigma = 1L, b_sigma = 0.3, a_1 = 2.1, a_2 = 3.1,
-                       return_chain = FALSE) {
+                       return_chain = FALSE, verbose_frequency = 100) {
 
   Rcpp::cppFunction("arma::mat armaInv(const arma::mat & x) { return arma::inv(x); }", depends = "RcppArmadillo")
 
@@ -230,10 +230,11 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k.star = 5,
   for (m in seq_len(n.iters)) {
 
     # create a readout
-    if (verbose) {
-      statement <- paste("tIFA process running. Now on iteration ", m, " of ", n.iters)
-      print(statement)
-    }
+    if (verbose > 0) {
+      if (m %% verbose_frequency == 0) {
+        statement <- paste("tIFA process running. Now on iteration ", m, " of ", n.iters)
+        print(statement)
+      }
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
