@@ -1,4 +1,4 @@
-Package: tIFA
+Package: tIFAr
 Title: A Missing Data Imputation Method for Metabolomics Data Using a Truncated Bayesian Infinite Factor Model
 Version: 1.0.0
 Authors@R: c(
