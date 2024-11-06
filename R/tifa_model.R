@@ -235,6 +235,7 @@ tIFA_model <- function(input_data, coding = NA, n.iters = 10000, k.star = 5,
         statement <- paste("tIFA process running. Now on iteration ", m, " of ", n.iters)
         print(statement)
       }
+    }
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
